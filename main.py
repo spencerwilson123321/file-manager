@@ -2,16 +2,38 @@ from tkinter import *
 from tkinter import ttk
 import os
 from subprocess import run
+import configparser
 
 CLICK = '<Button-1>'
 
+
+class Configuration:
+    def __init__(self, initial_path):
+        self.initial_path = initial_path
+
+    def __repr__(self):
+        out = (f"Configuration:\n"
+               f"Initial Path: {self.initial_path}\n")
+        return out
+
+    @staticmethod
+    def build_configuration(path):
+        """
+            Read config file and set properties accordingly.
+        """
+        conf = configparser.ConfigParser()
+        conf.read(path)
+        option1 = conf['USER']['initial_path']
+        return Configuration(option1)
+
+
 class App(ttk.Frame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, configuration, *args, **kwargs):
+        self.configuration: Configuration = configuration
+        self.working_directory: str = self.configuration.initial_path
+        self.files = []
         super().__init__(*args, **kwargs)
         self.grid()
-
-        self.working_directory = "/home/spencer"
-        self.files = []
 
     def remove_files(self):
         for file_label in self.files:
@@ -41,12 +63,10 @@ class App(ttk.Frame):
             self.working_directory = os.path.abspath(path)
             self.populate_files()
         else:
-            TEXT_FILES = {'txt', 'csv', 'json', 'py'}
+            text_files = {'txt', 'csv', 'json', 'py'}
             extension = os.path.basename(path).split(".")[-1].lower()
-            if extension in TEXT_FILES:
+            if extension in text_files:
                 run([f"/usr/bin/gnome-terminal", "--", "vim", os.path.basename(path)])
-
-        print(self.working_directory)
 
 
 if __name__ == "__main__":
@@ -54,6 +74,8 @@ if __name__ == "__main__":
     DEFAULT_SIZE = "400x400"
     root.geometry(DEFAULT_SIZE)
     root.title("mFiles - The Minimal File Manager")
-    app = App(root, padding=10)
+    config_path = './settings.ini'
+    config = Configuration.build_configuration("./settings.ini")
+    app = App(config, root, padding=10)
     app.populate_files()
     root.mainloop()
