@@ -8,13 +8,9 @@ CLICK = '<Button-1>'
 
 
 class Configuration:
-    def __init__(self, initial_path):
+    def __init__(self, initial_path, window_size):
         self.initial_path = initial_path
-
-    def __repr__(self):
-        out = (f"Configuration:\n"
-               f"Initial Path: {self.initial_path}\n")
-        return out
+        self.window_size = window_size
 
     @staticmethod
     def build_configuration(path):
@@ -23,8 +19,9 @@ class Configuration:
         """
         conf = configparser.ConfigParser()
         conf.read(path)
-        option1 = conf['USER']['initial_path']
-        return Configuration(option1)
+        initial_path = conf['USER']['initial_path']
+        window_size = conf['USER']['window_size']
+        return Configuration(initial_path, window_size)
 
 
 class App(ttk.Frame):
@@ -70,12 +67,11 @@ class App(ttk.Frame):
 
 
 if __name__ == "__main__":
-    root = Tk()
-    DEFAULT_SIZE = "400x400"
-    root.geometry(DEFAULT_SIZE)
-    root.title("mFiles - The Minimal File Manager")
     config_path = './settings.ini'
-    config = Configuration.build_configuration("./settings.ini")
+    config = Configuration.build_configuration(config_path)
+    root = Tk()
+    root.geometry(config.window_size)
+    root.title("mFiles - The Minimal File Manager")
     app = App(config, root, padding=10)
     app.populate_files()
     root.mainloop()
