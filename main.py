@@ -4,8 +4,8 @@ import os
 from subprocess import run
 import configparser
 
-CLICK = '<Button-1>'
-
+SINGLE_CLICK = '<Button-1>'
+DOUBLE_CLICK = '<Double-Button-1>'
 
 class Configuration:
     def __init__(self, initial_path, window_size):
@@ -41,7 +41,7 @@ class App(ttk.Frame):
         if self.working_directory != '/':
             # First, add the parent directory, if the current working directory isn't root.
             file_label = ttk.Label(self, text="..")
-            file_label.bind(CLICK, lambda e: self.click_handler(e))
+            file_label.bind(DOUBLE_CLICK, lambda e: self.click_handler(e))
             file_label.pack(side="top", anchor="w")
             self.files.append(file_label)
         for file in os.listdir(self.working_directory):
@@ -50,7 +50,7 @@ class App(ttk.Frame):
                 file_label = ttk.Label(self, text=file + "/")
             else:
                 file_label = ttk.Label(self, text=file)
-            file_label.bind(CLICK, lambda e: self.click_handler(e))
+            file_label.bind(DOUBLE_CLICK, lambda e: self.click_handler(e))
             file_label.pack(side="top", anchor="w")
             self.files.append(file_label)
 
