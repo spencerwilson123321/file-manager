@@ -59,11 +59,6 @@ class App(ttk.Frame):
         if os.path.isdir(path):
             self.working_directory = os.path.abspath(path)
             self.populate_files()
-        else:
-            text_files = {'txt', 'csv', 'json', 'py'}
-            extension = os.path.basename(path).split(".")[-1].lower()
-            if extension in text_files:
-                run([f"/usr/bin/gnome-terminal", "--", "vim", os.path.basename(path)])
 
 
 if __name__ == "__main__":
