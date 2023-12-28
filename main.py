@@ -5,10 +5,11 @@ import configparser
 
 SINGLE_CLICK = '<Button-1>'
 DOUBLE_CLICK = '<Double-Button-1>'
+CTRL_CLICK = "<Control-Button-1>"
+
 
 class Configuration:
-    def __init__(self, initial_path, window_size):
-        self.initial_path = initial_path
+    def __init__(self, window_size):
         self.window_size = window_size
 
     @staticmethod
@@ -18,17 +19,31 @@ class Configuration:
         """
         conf = configparser.ConfigParser()
         conf.read(path)
-        initial_path = conf['USER']['initial_path']
         window_size = conf['USER']['window_size']
-        return Configuration(initial_path, window_size)
+        return Configuration(window_size)
+
+
+class File(ttk.Label):
+    def __init__(self, path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.path = path
+
+    def __repr__(self):
+        return f"{self.path}"
+
+    def select(self):
+        self.config(background="light blue")
+
+    def deselect(self):
+        self.config(background="")
 
 
 class App(ttk.Frame):
     def __init__(self, configuration, *args, **kwargs):
         self.configuration: Configuration = configuration
-        self.working_directory: str = self.configuration.initial_path
         self.scroll_index = 0
-        self.files = []
+        self.files: list[File] = []
+        self.selected_files: list[File] = []
         super().__init__(*args, **kwargs)
         self.grid()
         self.bind_all('<Button-4>', self.scroll_handler_up)
@@ -43,22 +58,25 @@ class App(ttk.Frame):
         self.remove_files()
         self.scroll_index = 0
         row_index = 0
-        if self.working_directory != '/':
+        current_directory = os.getcwd()
+        if current_directory != '/':
             # First, add the parent directory, if the current working directory isn't root.
-            file_label = ttk.Label(self, text="..")
+            file_label = File("..", text="..")
             file_label.bind(DOUBLE_CLICK, self.double_click_handler)
-            file_label.grid(sticky=W, row=row_index)
+            file_label.grid(sticky=W, row=row_index, rowspan=1)
             row_index += 1
             self.files.append(file_label)
 
-        for file in os.listdir(self.working_directory):
-            path = self.working_directory + "/" + file
+        for file in os.listdir(current_directory):
+            path = current_directory + "/" + file
             if os.path.isdir(path):
-                file_label = ttk.Label(self, text=file + "/")
+                file_label = File(path, text=file + "/")
             else:
-                file_label = ttk.Label(self, text=file)
+                file_label = File(path, text=file)
+            file_label.bind(SINGLE_CLICK, self.single_click_handler)
             file_label.bind(DOUBLE_CLICK, self.double_click_handler)
-            file_label.grid(sticky=W, row=row_index)
+            file_label.bind(CTRL_CLICK, self.ctrl_click_handler)
+            file_label.grid(sticky=W, row=row_index, rowspan=1)
             row_index += 1
             self.files.append(file_label)
 
@@ -74,10 +92,22 @@ class App(ttk.Frame):
             self.scroll_index -= 1
 
     def double_click_handler(self, e):
-        path = self.working_directory + "/" + e.widget["text"]
+        path = e.widget.path
         if os.path.isdir(path):
-            self.working_directory = os.path.abspath(path)
+            os.chdir(path)
             self.populate_files()
+            self.selected_files = []
+
+    def single_click_handler(self, e):
+        for file in self.selected_files:
+            file.deselect()
+        self.selected_files = []
+        self.selected_files.append(e.widget)
+        e.widget.select()
+
+    def ctrl_click_handler(self, e):
+        self.selected_files.append(e.widget)
+        e.widget.select()
 
 
 if __name__ == "__main__":
