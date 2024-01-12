@@ -3,8 +3,8 @@ from tkinter import ttk
 import os
 import configparser
 
-SINGLE_CLICK = '<Button-1>'
-DOUBLE_CLICK = '<Double-Button-1>'
+SINGLE_CLICK = "<Button-1>"
+DOUBLE_CLICK = "<Double-Button-1>"
 CTRL_CLICK = "<Control-Button-1>"
 
 
@@ -15,11 +15,11 @@ class Configuration:
     @staticmethod
     def build_configuration(path):
         """
-            Read config file and set properties accordingly.
+        Read config file and set properties accordingly.
         """
         conf = configparser.ConfigParser()
         conf.read(path)
-        window_size = conf['USER']['window_size']
+        window_size = conf["USER"]["window_size"]
         return Configuration(window_size)
 
 
@@ -46,8 +46,8 @@ class App(ttk.Frame):
         self.selected_files: list[File] = []
         super().__init__(*args, **kwargs)
         self.grid()
-        self.bind_all('<Button-4>', self.scroll_handler_up)
-        self.bind_all('<Button-5>', self.scroll_handler_down)
+        self.bind_all("<Button-4>", self.scroll_handler_up)
+        self.bind_all("<Button-5>", self.scroll_handler_down)
 
     def remove_files(self):
         for file_label in self.files:
@@ -59,7 +59,7 @@ class App(ttk.Frame):
         self.scroll_index = 0
         row_index = 0
         current_directory = os.getcwd()
-        if current_directory != '/':
+        if current_directory != "/":
             # First, add the parent directory, if the current working directory isn't root.
             file_label = File("..", text="..")
             file_label.bind(DOUBLE_CLICK, self.double_click_handler)
@@ -111,7 +111,7 @@ class App(ttk.Frame):
 
 
 if __name__ == "__main__":
-    config_path = './settings.ini'
+    config_path = "./settings.ini"
     config = Configuration.build_configuration(config_path)
     root = Tk()
     root.geometry(config.window_size)
