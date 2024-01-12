@@ -3,10 +3,6 @@ from tkinter import ttk
 import os
 import configparser
 
-SINGLE_CLICK = "<Button-1>"
-DOUBLE_CLICK = "<Double-Button-1>"
-CTRL_CLICK = "<Control-Button-1>"
-
 
 class Configuration:
     def __init__(self, window_size, font_size):
