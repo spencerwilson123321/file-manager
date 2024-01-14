@@ -48,12 +48,14 @@ class App(ttk.Frame):
         self.files: list[File] = []
         self.selected_files: list[File] = []
         self.copy_list = []
+        self.cut_list = []
         self.bind_all("<Up>", self.on_up)
         self.bind_all("<Down>", self.on_down)
         self.bind_all("<Shift-Up>", self.on_shift_up)
         self.bind_all("<Shift-Down>", self.on_shift_down)
         self.bind_all("y", self.on_y)
         self.bind_all("<Control-c>", self.on_control_c)
+        self.bind_all("<Control-x>", self.on_control_x)
         self.bind_all("<Control-v>", self.on_control_v)
         self.bind_all("<Return>", self.on_enter)
         self.bind_all("h", self.on_h)
@@ -64,7 +66,6 @@ class App(ttk.Frame):
         for file_label in self.files:
             file_label.deselect()
             file_label.destroy()
-        self.copy_list = []
         self.selected_files = []
         self.files = []
 
@@ -108,18 +109,34 @@ class App(ttk.Frame):
 
     def on_control_c(self, e):
         self.copy_list = []
+        self.cut_list = []
         for file in self.selected_files:
             if file.path == "..":
                 continue
             self.copy_list.append(file)
             print(f"Copied: {file.path}")
 
+    def on_control_x(self, e):
+        self.copy_list = []
+        self.cut_list = []
+        for file in self.selected_files:
+            if file.path == "..":
+                continue
+            self.cut_list.append(file)
+            print(f"Cut: {file.path}")
+
     def on_control_v(self, e):
-        if not self.copy_list:
+        if not self.copy_list and not self.cut_list:
             return
         current_directory = os.getcwd()
-        for file in self.copy_list:
-            shutil.copy(file.path, current_directory)
+        if self.copy_list:
+            for file in self.copy_list:
+                shutil.copy(file.path, current_directory)
+                print(f"copied: {file.path} to {current_directory}")
+        elif self.cut_list:
+            for file in self.cut_list:
+                shutil.move(file.path, current_directory)
+                print(f"moved: {file.path} to {current_directory}")
         self.populate_files()
 
     def on_enter(self, e):
