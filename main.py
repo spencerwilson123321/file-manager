@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 import os
 import configparser
+import shutil
 
 
 class Configuration:
@@ -46,11 +47,14 @@ class App(ttk.Frame):
         self.current_file_index = 0
         self.files: list[File] = []
         self.selected_files: list[File] = []
+        self.copy_list = []
         self.bind_all("<Up>", self.on_up)
         self.bind_all("<Down>", self.on_down)
         self.bind_all("<Shift-Up>", self.on_shift_up)
         self.bind_all("<Shift-Down>", self.on_shift_down)
-        self.bind_all("<Control_L>", self.on_ctrl)
+        self.bind_all("y", self.on_y)
+        self.bind_all("<Control-c>", self.on_control_c)
+        self.bind_all("<Control-v>", self.on_control_v)
         self.bind_all("<Return>", self.on_enter)
         self.bind_all("h", self.on_h)
         self.bind_all("<Escape>", self.on_escape)
@@ -60,6 +64,7 @@ class App(ttk.Frame):
         for file_label in self.files:
             file_label.deselect()
             file_label.destroy()
+        self.copy_list = []
         self.selected_files = []
         self.files = []
 
@@ -101,6 +106,20 @@ class App(ttk.Frame):
         self.clear_selected_files()
         self.populate_files()
 
+    def on_control_c(self, e):
+        self.copy_list = []
+        for file in self.selected_files:
+            if file.path == "..":
+                continue
+            self.copy_list.append(file)
+            print(f"Copied: {file.path}")
+
+    def on_control_v(self, e):
+        current_directory = os.getcwd()
+        for file in self.copy_list:
+            shutil.copy(file.path, current_directory)
+        self.populate_files()
+
     def on_enter(self, e):
         file = self.get_current_file()
         if os.path.isdir(file.path):
@@ -121,7 +140,7 @@ class App(ttk.Frame):
         self.files[self.current_file_index].select()
         self.selected_files.append(self.files[self.current_file_index])
 
-    def on_ctrl(self, e):
+    def on_y(self, e):
         """
         Highlight the current file permanently, it shouldn't be unselected unless Esc is pressed.
         """
@@ -139,6 +158,8 @@ class App(ttk.Frame):
         if self.current_file_index > 0:
             self.current_file_index -= 1
         new_file = self.get_current_file()
+        if new_file.selected:
+            return
         new_file.select()
         self.selected_files.append(new_file)
 
@@ -154,6 +175,8 @@ class App(ttk.Frame):
         if self.current_file_index < len(self.files) - 1:
             self.current_file_index += 1
         new_file = self.get_current_file()
+        if new_file.selected:
+            return
         new_file.select()
         self.selected_files.append(new_file)
 
@@ -161,6 +184,8 @@ class App(ttk.Frame):
         if self.current_file_index > 0:
             self.current_file_index -= 1
         new_file = self.get_current_file()
+        if new_file.selected:
+            return
         new_file.select()
         self.selected_files.append(new_file)
 
@@ -168,6 +193,8 @@ class App(ttk.Frame):
         if self.current_file_index < len(self.files) - 1:
             self.current_file_index += 1
         new_file = self.get_current_file()
+        if new_file.selected:
+            return
         new_file.select()
         self.selected_files.append(new_file)
 
