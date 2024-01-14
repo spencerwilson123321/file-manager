@@ -115,6 +115,8 @@ class App(ttk.Frame):
             print(f"Copied: {file.path}")
 
     def on_control_v(self, e):
+        if not self.copy_list:
+            return
         current_directory = os.getcwd()
         for file in self.copy_list:
             shutil.copy(file.path, current_directory)
