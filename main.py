@@ -23,6 +23,7 @@ class File(ttk.Label):
     def __init__(self, path, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.selected = False
+        self.is_permanent_highlight = False
         self.path = path
 
     def __repr__(self):
@@ -45,13 +46,14 @@ class App(ttk.Frame):
         self.current_file_index = 0
         self.files: list[File] = []
         self.selected_files: list[File] = []
-        self.bind_all("<Up>", self.move_up)
-        self.bind_all("<Down>", self.move_down)
-        self.bind_all("<Shift-Up>", self.shift_move_up)
-        self.bind_all("<Shift-Down>", self.shift_move_down)
-        self.bind_all("<Return>", self.interact)
-        self.bind_all("h", self.toggle_hidden_files)
-        self.bind_all("<Escape>", lambda e: exit(1))
+        self.bind_all("<Up>", self.on_up)
+        self.bind_all("<Down>", self.on_down)
+        self.bind_all("<Shift-Up>", self.on_shift_up)
+        self.bind_all("<Shift-Down>", self.on_shift_down)
+        self.bind_all("<Control_L>", self.on_ctrl)
+        self.bind_all("<Return>", self.on_enter)
+        self.bind_all("h", self.on_h)
+        self.bind_all("<Escape>", self.on_escape)
         self.grid()
 
     def remove_files(self):
@@ -94,47 +96,75 @@ class App(ttk.Frame):
         print(f"all files: {self.selected_files}")
         print(f"current file index: {self.current_file_index}")
 
-    def toggle_hidden_files(self, e):
+    def on_h(self, e):
         self.hide_hidden_files = not self.hide_hidden_files
-        for file in self.selected_files:
-            file.deselect()
-        self.selected_files = []
+        self.clear_selected_files()
         self.populate_files()
 
-    def interact(self, e):
+    def on_enter(self, e):
         file = self.get_current_file()
         if os.path.isdir(file.path):
             os.chdir(file.path)
             self.populate_files()
 
-    def move_up(self, e):
+    def clear_selected_files(self):
         for file in self.selected_files:
             file.deselect()
+            file.is_permanent_highlight = False
+        self.selected_files = []
+
+    def on_escape(self, e):
+        """
+        Clear the selected files, and
+        """
+        self.clear_selected_files()
+        self.files[self.current_file_index].select()
+        self.selected_files.append(self.files[self.current_file_index])
+
+    def on_ctrl(self, e):
+        """
+        Highlight the current file permanently, it shouldn't be unselected unless Esc is pressed.
+        """
+        self.files[self.current_file_index].is_permanent_highlight = True
+
+    def on_up(self, e):
+        to_remove = []
+        for file in self.selected_files:
+            if file.is_permanent_highlight:
+                continue
+            file.deselect()
+            to_remove.append(file)
+        for file in to_remove:
+            self.selected_files.remove(file)
         if self.current_file_index > 0:
             self.current_file_index -= 1
         new_file = self.get_current_file()
         new_file.select()
-        self.selected_files = []
         self.selected_files.append(new_file)
 
-    def move_down(self, e):
+    def on_down(self, e):
+        to_remove = []
         for file in self.selected_files:
+            if file.is_permanent_highlight:
+                continue
             file.deselect()
+            to_remove.append(file)
+        for file in to_remove:
+            self.selected_files.remove(file)
         if self.current_file_index < len(self.files) - 1:
             self.current_file_index += 1
         new_file = self.get_current_file()
         new_file.select()
-        self.selected_files = []
         self.selected_files.append(new_file)
 
-    def shift_move_up(self, e):
+    def on_shift_up(self, e):
         if self.current_file_index > 0:
             self.current_file_index -= 1
         new_file = self.get_current_file()
         new_file.select()
         self.selected_files.append(new_file)
 
-    def shift_move_down(self, e):
+    def on_shift_down(self, e):
         if self.current_file_index < len(self.files) - 1:
             self.current_file_index += 1
         new_file = self.get_current_file()
