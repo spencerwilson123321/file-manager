@@ -39,6 +39,23 @@ class File(ttk.Label):
         self.selected = False
 
 
+class Dialog(ttk.Frame):
+    NEW_FILE = 1
+    NEW_DIRECTORY = 2
+
+    def __init__(self, label_text, action, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label = Label(self, text=label_text)
+        self.entry = Entry(self)
+        self.action = action
+        self.label.pack(side=LEFT)
+        self.entry.pack(side=LEFT)
+        self.entry.focus()
+
+    def get_value(self):
+        return self.entry.get()
+
+
 class App(ttk.Frame):
     def __init__(self, configuration, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,6 +66,7 @@ class App(ttk.Frame):
         self.selected_files: list[File] = []
         self.copy_list = []
         self.cut_list = []
+        self.dialog = None
         self.bind_all("<Up>", self.on_up)
         self.bind_all("<Down>", self.on_down)
         self.bind_all("<Shift-Up>", self.on_shift_up)
@@ -57,10 +75,11 @@ class App(ttk.Frame):
         self.bind_all("<Control-c>", self.on_control_c)
         self.bind_all("<Control-x>", self.on_control_x)
         self.bind_all("<Control-v>", self.on_control_v)
+        self.bind_all("<Control-n>", self.on_control_n)
         self.bind_all("<Return>", self.on_enter)
         self.bind_all("h", self.on_h)
         self.bind_all("<Escape>", self.on_escape)
-        self.grid()
+        self.pack(expand=True, fill=BOTH)
 
     def remove_files(self):
         for file_label in self.files:
@@ -76,8 +95,8 @@ class App(ttk.Frame):
         row_index = 0
         if current_directory != "/":
             # First, add the parent directory, if the current working directory isn't root.
-            file_label = File("..", text="..")
-            file_label.grid(sticky=W, row=row_index)
+            file_label = File("..", self, text="..")
+            file_label.pack(side=TOP, fill=X)
             row_index += 1
             self.files.append(file_label)
         for file in os.listdir(current_directory):
@@ -85,10 +104,10 @@ class App(ttk.Frame):
                 continue
             path = current_directory + "/" + file
             if os.path.isdir(path):
-                file_label = File(path, text=file + "/")
+                file_label = File(path, self, text=file + "/")
             else:
-                file_label = File(path, text=file)
-            file_label.grid(sticky=W, row=row_index)
+                file_label = File(path, self, text=file)
+            file_label.pack(side=TOP, fill=X)
             row_index += 1
             self.files.append(file_label)
         self.selected_files.append(self.files[0])
@@ -102,10 +121,22 @@ class App(ttk.Frame):
         print(f"all files: {self.selected_files}")
         print(f"current file index: {self.current_file_index}")
 
+    def clear_dialog(self):
+        if self.dialog is not None:
+            self.dialog.forget()
+            self.dialog = None
+
     def on_h(self, e):
+        if self.dialog is not None:
+            return
         self.hide_hidden_files = not self.hide_hidden_files
         self.clear_selected_files()
         self.populate_files()
+
+    def on_control_n(self, e):
+        self.clear_selected_files()
+        self.dialog = Dialog("New filename: ", Dialog.NEW_FILE, self)
+        self.dialog.pack(side=BOTTOM, anchor=W)
 
     def on_control_c(self, e):
         self.copy_list = []
@@ -140,6 +171,15 @@ class App(ttk.Frame):
         self.populate_files()
 
     def on_enter(self, e):
+        if self.dialog is not None:
+            if self.dialog.action == Dialog.NEW_FILE:
+                filename = self.dialog.get_value()
+                with open(filename, "w") as f:
+                    pass
+                self.populate_files()
+            return
+        if not self.selected_files:
+            return
         file = self.get_current_file()
         if os.path.isdir(file.path):
             os.chdir(file.path)
@@ -155,6 +195,7 @@ class App(ttk.Frame):
         """
         Clear the selected files, and
         """
+        self.clear_dialog()
         self.clear_selected_files()
         self.files[self.current_file_index].select()
         self.selected_files.append(self.files[self.current_file_index])
@@ -163,9 +204,12 @@ class App(ttk.Frame):
         """
         Highlight the current file permanently, it shouldn't be unselected unless Esc is pressed.
         """
+        if self.dialog is not None:
+            return
         self.files[self.current_file_index].is_permanent_highlight = True
 
     def on_up(self, e):
+        self.clear_dialog()
         to_remove = []
         for file in self.selected_files:
             if file.is_permanent_highlight:
@@ -183,6 +227,7 @@ class App(ttk.Frame):
         self.selected_files.append(new_file)
 
     def on_down(self, e):
+        self.clear_dialog()
         to_remove = []
         for file in self.selected_files:
             if file.is_permanent_highlight:
@@ -200,6 +245,7 @@ class App(ttk.Frame):
         self.selected_files.append(new_file)
 
     def on_shift_up(self, e):
+        self.clear_dialog()
         if self.current_file_index > 0:
             self.current_file_index -= 1
         new_file = self.get_current_file()
@@ -209,6 +255,7 @@ class App(ttk.Frame):
         self.selected_files.append(new_file)
 
     def on_shift_down(self, e):
+        self.clear_dialog()
         if self.current_file_index < len(self.files) - 1:
             self.current_file_index += 1
         new_file = self.get_current_file()
